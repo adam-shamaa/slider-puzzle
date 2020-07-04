@@ -284,7 +284,7 @@ public class GUI extends javax.swing.JFrame implements ActionListener {
             pushOutput("The current board is not solvable");
             showSolutionButton.setEnabled(false);  
         }else {
-            pushOutput("Solved!","Time Elapsed: " + timeElapsed + " ms","Number of Moves: " + solve.moves(), "Solution Depth: " + solve.getSolutionDepth(), "Number of Observed Boards: " + solve.numObservedGraphs);
+            pushOutput("Solved!","Time Elapsed: " + timeElapsed + " ms","Number of Moves: " + solve.moves(), "Solution Depth: " + solve.getSolutionDepth(), "Number of Observed Boards: " + solve.getNumObservedBoards());
             showSolutionButton.setEnabled(true);
         }
         initialize();
