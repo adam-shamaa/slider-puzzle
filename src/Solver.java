@@ -2,8 +2,9 @@ import java.util.Comparator;
 
 public class Solver {
     private Node solution;
-
-    private class Node {
+    private int numObservedGraphs;
+    
+    private class Node implements Comparable {
         Board boardItem;
         int numOfMoves;
         Node prevNode;
@@ -23,23 +24,30 @@ public class Solver {
         private boolean isGoal() {
             return manhattan == 0;
         }
-    }
 
-    int numObservedGraphs;
+        @Override
+        public int compareTo(Object o) {
+            if (o instanceof Node) {
+                return this.priority - ((Node)o).priority;
+            }else {
+                return -1;
+            }
+        }
+    }
 
     public Solver(Board initial) {
         if (initial == null) {
             throw new IllegalArgumentException();
         }
 
-        MinPQ <Node> originPQ = new MinPQ <>(new SolverStepComparator());   //One PQ for the input board
-        MinPQ <Node> twinPQ = new MinPQ <>(new SolverStepComparator());     //PQ for the twin version of the input board, used to determine if the current board is solvable
+        MinPQ <Node> originPQ = new MinPQ <Node> ();   //PQ for the input board
+        MinPQ <Node> twinPQ = new MinPQ <Node>();     //PQ for the twin version of the input board, used to determine if the current board is solvable
 
         Board twin = initial.twin();
         Node currentNode = new Node(initial, 0, null,0);
         Node twinNode = new Node(twin, 0, null,0);
         originPQ.insert(currentNode);
-        
+
         while (true) {
             if (currentNode.isGoal()) {     //solved board
                 solution = currentNode;
@@ -61,7 +69,7 @@ public class Solver {
                 }
             }
             numObservedGraphs++;
-            currentNode = originPQ.delMin();    //Iterates through the board with the lowest manhattan and hamming sum
+            currentNode = originPQ.delMin();    //Iterate through the board with the lowest manhattan and hamming sum
             twinNode = twinPQ.delMin();
         }
     }
@@ -69,13 +77,7 @@ public class Solver {
     public int numOfObservedGraphs() {
         return numObservedGraphs;
     }
-
-    private class SolverStepComparator implements Comparator <Node> {
-        public int compare(Node step1, Node step2) {
-            return step1.priority - step2.priority;
-        }
-    }
-
+    
     public int getSolutionDepth() {
         return solution.depth;
     }
@@ -90,7 +92,7 @@ public class Solver {
         }
         return - 1;
     }
-    
+
     public Stack<Board> solutionStack(){
         Stack<Board> stack = new Stack<Board> ();
         Node currentN = solution;
@@ -104,5 +106,9 @@ public class Solver {
     public Iterable <Board> solution() {
         return solutionStack();
     }
-
+    
+    public int getNumObservedBoards() {
+        return numObservedGraphs;
+    }
+    
 }
