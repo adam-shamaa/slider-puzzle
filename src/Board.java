@@ -4,154 +4,168 @@ import java.util.NoSuchElementException;
 import java.lang.StringBuilder;
 
 public class Board {
-    private final int[][] input;
-    private final int boardSize;
-    private int indexOfSpaceX;
-    private int indexOfSpaceY;
+    private final int[][] tileArray;
+
+    private int boardDimension;
+    private int xIndexOfSpace;
+    private int yIndexOfSpace;
+
     private int[] switched;
     private int[] switchedPrev;
-    
-    public Board(int[][] tiles) {   //initialization 
-        input = new int[tiles.length][tiles.length];
-        boardSize = tiles.length;
-        for (int col = 0; col < boardSize; col++) {
-            for (int row = 0; row < boardSize; row++) {
-                input[col][row] = tiles[col][row];
-                if (input[col][row] == 0) {
-                    indexOfSpaceX = col;
-                    indexOfSpaceY = row;
+
+    private int hammingSum;
+    private int manhattanSum;
+
+    public Board(int[][] tiles) {
+        tileArray = new int[tiles.length][tiles.length];
+        boardDimension = tiles.length;
+
+        //create a deep copy of the array representation of the board for internal use
+        for (int col = 0; col < boardDimension; col++) {
+            for (int row = 0; row < boardDimension; row++) {
+                tileArray[col][row] = tiles[col][row];
+                if (tileArray[col][row] == 0) {
+                    xIndexOfSpace = col;
+                    yIndexOfSpace = row;
                 }
             }
         }
+
+        //compute & store the manhattan and hamming attributes locally
+        computeHammingAndManhattan();
     }
 
-    public int hamming() {  //the number of misplaced tiles
-        int outOfPlace = 0;
-        int currentIndex = 0;
-        int gridLength = boardSize * boardSize;
-        for (int x = 0; x < boardSize; x++) {
-            for (int y = 0; y < boardSize; y++) {
-                if (input[x][y] == 0) {} else if (input[x][y] != (currentIndex + 1) && currentIndex < gridLength) {
-                    outOfPlace++;
-                }
-                currentIndex++;
-            }
-        }
-        return outOfPlace;
-    }
-
-    public int manhattan() {    //the sum of the distance of all misplaced tiles to their correct tile index
+    //compute the manhattan and hamming sums, saving the attributes locally as global variables
+    private void computeHammingAndManhattan() {
+        int hammingSum = 0;
         int manhattanSum = 0;
-        int currentIndex = 0;
-        int gridLength = boardSize * boardSize;
-        for (int x = 0; x < boardSize; x++) {
-            for (int y = 0; y < boardSize; y++) {
-                if (input[x][y] == 0) { 
-                    
-                } else if (input[x][y] != (currentIndex + 1) && currentIndex < gridLength) {  //if the 
-                    manhattanSum += Math.abs((input[x][y] - 1) / boardSize - (currentIndex / boardSize)) + Math.abs((input[x][y] - 1) % boardSize - (currentIndex % boardSize));
+        int currentTileNumber = 0;
+
+        //check each board tile
+        for (int x = 0; x < boardDimension; x++) {
+            for (int y = 0; y < boardDimension; y++) {
+                //misplaced tile found (skip over the space/zero tile)
+                if (tileArray[x][y] != (currentTileNumber + 1) && currentTileNumber < (boardDimension * boardDimension) && tileArray[x][y] != 0) {
+                    //update hamming sum
+                    hammingSum++;
+                    //update manhattan sum
+                    manhattanSum += Math.abs((tileArray[x][y] - 1) / boardDimension - (currentTileNumber / boardDimension)) + Math.abs((tileArray[x][y] - 1) % boardDimension - (currentTileNumber % boardDimension));
                 }
-                currentIndex++;
+                //increment the tile index ex. starts 
+                currentTileNumber++;
             }
         }
-        return manhattanSum;
+
+        this.hammingSum = hammingSum;
+        this.manhattanSum = manhattanSum;
     }
 
-    public String toString() {
-        StringBuilder returnVal = new StringBuilder(boardSize + "\n");
-        for (int x = 0; x < boardSize; x++) {
-            for (int y = 0; y < boardSize; y++) {
-                returnVal.append(input[x][y] + " ");
-            }
-            returnVal.append("\n");
-        }
-        return (returnVal.toString());
+    //returns the double array version of the board
+    public int[][] getIntegerArray() {
+        return tileArray;
+    }
+
+    // dimension of the board (ex. a 4 x 4 board would have a dimension of 4)
+    public int dimension() {
+        return boardDimension;
+    }
+
+    public int hamming() {
+        return this.hammingSum;
+    }
+
+    public int manhattan() {
+        return this.manhattanSum;
     }
 
     public boolean isGoal() {
         return (hamming() == 0);
     }
-    
-    public int dimension() {
-        return boardSize;
+
+    public int[] getSwitchedTiles() {
+        return switched;
     }
-    
-    public int[][] getIntegerArray(){   //returns the double array version of the board
-        return input;
+
+    public String toString() {
+        StringBuilder returnVal = new StringBuilder(boardDimension + "\n");
+        for (int column = 0; column < boardDimension; column++) {
+            for (int row = 0; row < boardDimension; row++) {
+                returnVal.append(tileArray[column][row] + " ");
+            }
+            returnVal.append("\n");
+        }
+        return returnVal.toString();
     }
 
     public boolean equals(Object item) {
-        if (! (item instanceof Board)) {
-            return false;
-        }
+        if (!(item instanceof Board)) return false;
+
         Board compareTo = (Board) item;
-        if (compareTo.input.length != input.length) {
-            return false;
-        }
-        for (int x = 0; x < boardSize; x++) {
-            for (int y = 0; y < boardSize; y++) {
-                if (input[x][y] != compareTo.input[x][y]) {
-                    return false;
-                }
+        if (compareTo.tileArray.length != tileArray.length) return false;
+
+        for (int column = 0; column < boardDimension; column++) {
+            for (int row = 0; row < boardDimension; row++) {
+                if (tileArray[column][row] != compareTo.tileArray[column][row]) return false;
             }
         }
+
         return true;
     }
 
-    public Board twin() {   //returns  alternate version of the board i.e. if a board is unsolvable will return a solvable version
-        int[][] twinArray = copyArray();
-        switchVal(twinArray, Math.abs(1 - indexOfSpaceX), indexOfSpaceY, indexOfSpaceX, Math.abs(1 - indexOfSpaceY));
+    //returns a twin version of the board with two tiles that are not next to each other switch (used to determine if a board is unsolvable)
+    public Board twin() {
+        int[][] twinArray = copyTileArray();
+        switchTile(twinArray, Math.abs(1 - xIndexOfSpace), yIndexOfSpace, xIndexOfSpace, Math.abs(1 - yIndexOfSpace));
         return (new Board(twinArray));
     }
-    
-    public int[] getSwitchedTiles() {
-        if (switched == null) {
-            return null;
-        }else {
-            return switched;
-        }
+
+    private void switchTile(int[][] array, int column1, int row1, int column2, int row2) {
+        int tempVal = array[column2][row2];
+        array[column2][row2] = array[column1][row1];
+        array[column1][row1] = tempVal;
     }
 
-    private void switchVal(int[][] array, int a1, int a2, int b1, int b2) {
-        int tempInt = array[b1][b2];
-        array[b1][b2] = array[a1][a2];
-        array[a1][a2] = tempInt;
-    }
-    
-    private void saveSwitch(int[][] array, int a1, int a2, int b1, int b2) {
+    private void saveSwitch(int column1, int row1, int column2, int row2) {
         switchedPrev = new int[4];
-        switchedPrev[0] = a2; switchedPrev[1] = a1; switchedPrev[2] = b2; switchedPrev[3] = b1; 
+        switchedPrev[0] = row1;
+        switchedPrev[1] = column1;
+        switchedPrev[2] = row2;
+        switchedPrev[3] = column2;
     }
-    
-    private int[][] copyArray() {
-        int copy[][] = new int[input.length][];
-        for (int x = 0; x < boardSize; x++) {
-            copy[x] = Arrays.copyOf(input[x], input.length);
+
+    private void switchTileAndSave(int[][] array, int column1, int row1, int column2, int row2) {
+        switchTile(array, column1, row1, column2, row2);
+        saveSwitch(column1, row1, column2, row2);
+    }
+    private int[][] copyTileArray() {
+        int copy[][] = new int[tileArray.length][];
+        for (int x = 0; x < boardDimension; x++) {
+            copy[x] = Arrays.copyOf(tileArray[x], tileArray.length);
         }
         return copy;
     }
-    
+
     //Iterator returning all possible board choices per level ex. an open corner will iterate through two possible moves
-    public Iterable <Board> neighbors() {
-        return new Iterable <Board> () {
-            public Iterator <Board> iterator() {
+    public Iterable < Board > neighbors() {
+        return new Iterable < Board > () {
+            public Iterator < Board > iterator() {
                 return new NeighborIterator();
             }
         };
     }
 
-    private class NeighborIterator implements Iterator <Board> {
-        int numNeighbors;   
+    private class NeighborIterator implements Iterator < Board > {
+        int numNeighbors;
         public NeighborIterator() { //Identifies location of tile ex. a middle tile has four neighbors
-            if (indexOfSpaceX == 0 || indexOfSpaceX == boardSize - 1) { //tile located on first or last column
-                if (indexOfSpaceY == 0 || indexOfSpaceY == boardSize - 1) { //tile located on first or last row i.e. corner tile
+            if (xIndexOfSpace == 0 || xIndexOfSpace == boardDimension - 1) { //tile located on first or last column
+                if (yIndexOfSpace == 0 || yIndexOfSpace == boardDimension - 1) { //tile located on first or last row i.e. corner tile
                     numNeighbors = 2;
-                } else {  //middle tile hugging a wall
-                    numNeighbors = 3; 
+                } else { //middle tile hugging a wall
+                    numNeighbors = 3;
                 }
-            } else if (indexOfSpaceY == 0 || indexOfSpaceY == boardSize - 1) { //middle tile hugging a wall 
+            } else if (yIndexOfSpace == 0 || yIndexOfSpace == boardDimension - 1) { //middle tile hugging a wall 
                 numNeighbors = 3;
-            } else {   //middle tile
+            } else { //middle tile
                 numNeighbors = 4;
             }
         }
@@ -161,45 +175,39 @@ public class Board {
         }
 
         public Board next() {
-            if (numNeighbors == 0) {
-                throw new NoSuchElementException();
-            }
-            int[][] tileRepTemp = copyArray();
-            
+            if (numNeighbors == 0) throw new NoSuchElementException();
+
+            int[][] nextTileArray = copyTileArray();
+
             //logic: each open-space must have at least one open neighbor above/below and/or to the left/right
             //If contains 3+ neighbors inverse conditions to target the opposite tile
             if (numNeighbors == 1) {
-                if (indexOfSpaceX == 0) {   //switches open-space with tile to the right
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX + 1, indexOfSpaceY);     //switch open tile with a neighbor
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX + 1, indexOfSpaceY);    //saves switch in a separate array for the solution
-                } else {    //switches open-space with tile to the left
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX - 1, indexOfSpaceY);
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX - 1, indexOfSpaceY);
+                if (xIndexOfSpace == 0) {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace + 1, yIndexOfSpace); //switches open-space with tile to the right
+                } else {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace - 1, yIndexOfSpace); //switch the open-space with tile to the left
                 }
             } else if (numNeighbors == 2) {
-                if (indexOfSpaceY == 0) {   //switches open-space with tile below
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
-                } else {    //switches open-space with tile above
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY - 1);
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY - 1);
+                if (yIndexOfSpace == 0) {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace, yIndexOfSpace + 1); //switch the open-space with tile below it
+                } else {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace, yIndexOfSpace - 1); //switch the open-space with tile above it
                 }
             } else if (numNeighbors == 3) {
-                if (indexOfSpaceX == 0 || indexOfSpaceX == boardSize -1) { //switches open-space with tile below
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
-                } else {    //switches open-space with tile to the right
-                    switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX + 1, indexOfSpaceY);
-                    saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX + 1, indexOfSpaceY);
+                if (xIndexOfSpace == 0 || xIndexOfSpace == boardDimension - 1) {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace, yIndexOfSpace + 1); //switch the open-space with the tile below it
+                } else {
+                    switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace + 1, yIndexOfSpace); //switch open-space with tile to the right of it
                 }
-            } else {//switches tile with tile below
-                switchVal(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
-                saveSwitch(tileRepTemp, indexOfSpaceX, indexOfSpaceY, indexOfSpaceX, indexOfSpaceY + 1);
+            } else {
+                //switch the open-space tile with tile below it
+                switchTileAndSave(nextTileArray, xIndexOfSpace, yIndexOfSpace, xIndexOfSpace, yIndexOfSpace + 1);
             }
+            Board nextBoard = new Board(nextTileArray);
+            nextBoard.switched = switchedPrev; //saves the index of the switched tiles as an attribute
             numNeighbors--;
-            Board newBoard = new Board(tileRepTemp);
-            newBoard.switched = switchedPrev;   //saves the indexs of the switched tiles as an attribute
-            return newBoard;
+
+            return nextBoard;
         }
     }
 }

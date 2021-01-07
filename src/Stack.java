@@ -1,7 +1,9 @@
 import java.util.Iterator;
 
-public class Stack<Item> implements Iterable<Item>{
-    private class Node{
+public class Stack < Item > implements Iterable < Item > {
+    private Node head;
+
+    private class Node {
         Node next;
         Item item;
 
@@ -10,35 +12,33 @@ public class Stack<Item> implements Iterable<Item>{
             this.item = item;
         }
     }
-    
-    private Node first;
 
     public void push(Item item) {
-        first = new Node(item, first);
+        head = new Node(item, head);
     }
 
     public Item pop() {
-        if (first == null) {
-            throw new IllegalArgumentException("Empty stack");
-        }
-        Item item = first.item;
-        first = first.next;
+        if (head == null) throw new IllegalArgumentException("Empty stack");
+        Item item = head.item;
+        head = head.next;
         return item;
     }
-    
+
     public boolean isEmpty() {
-        return first == null;
+        return head == null;
     }
-    
-    public Iterator<Item> iterator() {
+
+    public Iterator < Item > iterator() {
         return new StackIterator();
     }
 
-    private class StackIterator implements Iterator<Item>{
-        Node current = first;
+    private class StackIterator implements Iterator < Item > {
+        Node current = head;
+
         public boolean hasNext() {
             return current != null;
         }
+
         public Item next() {
             Item item = current.item;
             current = current.next;
